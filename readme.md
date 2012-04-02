@@ -2,7 +2,7 @@
 Notely is a simple command line utility for saving short text notes.
 
 ##Installation
-My preffered way of installing notely is this ``ln -s `pwd`/notely ~/bin/notely`` which
+My preferred way of installing notely is this ``ln -s `pwd`/notely ~/bin/notely`` which
 puts it in my ~/bin/ folder.
 
 ##Usage
