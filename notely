@@ -1,0 +1,102 @@
+#!/usr/bin/env python
+import os
+import sys
+import json
+
+
+def usage():
+    print "usage is: "
+    print "notely add [message] - adds a note with message, opens an editor if message is empty"
+    print "notely del id - deletes message with id matching the provided id"
+    print "notely list - shows all notes"
+    print "notely clear - deletes all notes"
+
+
+NOTELY_FILE = os.environ["HOME"] + "/.notely"
+
+def safe_load_notely_file():
+    try:
+        f = open(NOTELY_FILE).read()
+        obj = json.loads(f)
+        return obj
+    except:
+        f = open(NOTELY_FILE, "w")
+        f.write(json.dumps({"notes":[]}))
+        f.flush()
+        f.close()
+        f = open(NOTELY_FILE).read()
+        obj = json.loads(f)
+        return obj
+
+
+def write_notely_dict(dictionary):
+    f = open(NOTELY_FILE, "w")
+    f.write(json.dumps(dictionary))
+    f.close()
+
+def clear_notes():
+    write_notely_dict({"notes":[]})
+
+def get_highest_id(obj):
+    ids = []
+    for note in obj["notes"]:
+        ids.append(int(note["id"]))
+    width = int(sorted(ids)[-1])
+    return width
+
+def add_note(message):
+    obj = safe_load_notely_file()
+    obj["notes"].append({"message": message, "id":get_highest_id(obj)+1})
+    write_notely_dict(obj)
+
+def list_notes():
+    obj = safe_load_notely_file()
+    if len(obj["notes"]) == 0:
+        print "-- You haven't got any notely notes"
+    else:
+        width = len(str(get_highest_id(obj)))
+        for note in obj["notes"]:
+            strlen = len(str(note["id"]))
+            spaces = width-strlen
+            print note["id"]," " * (spaces),":",note["message"]
+
+def delete_note(id):
+    obj = safe_load_notely_file()
+    new_notes = []
+    for note in obj["notes"]:
+        if int(note["id"]) != id:
+            new_notes.append(note)
+    obj["notes"] = new_notes
+    write_notely_dict(obj)
+
+def main():
+    if len(sys.argv) < 2:
+        usage()
+    else:
+        if sys.argv[1] == "add":
+            if len(sys.argv) > 2:
+                add_note(" ".join(sys.argv[2:]))
+            else:
+                f = open("/tmp/notely.note", "w")
+                f.close()
+                os.system("$EDITOR /tmp/notely.note");
+                f = open("/tmp/notely.note")
+                text = f.read().strip()
+                if text == "":
+                    print "Empty note provided, quitting"
+                    exit(1)
+                else:
+                    add_note(text)
+            
+        if sys.argv[1] == "list":
+            list_notes()
+        if sys.argv[1] == "clear":
+            clear_notes()
+        if sys.argv[1] == "del":
+            if len(sys.argv) == 2:
+                usage()
+            else:
+                delete_note(int(sys.argv[2]))
+            
+if __name__ == "__main__":
+    main()
