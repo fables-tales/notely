@@ -39,9 +39,15 @@ def clear_notes():
 
 def get_highest_id(obj):
     ids = []
+
     for note in obj["notes"]:
         ids.append(int(note["id"]))
-    width = int(sorted(ids)[-1])
+
+    width = 0
+
+    if(len(ids) > 0):
+        width = int(sorted(ids)[-1])
+
     return width
 
 def add_note(message):
