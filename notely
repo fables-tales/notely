@@ -4,6 +4,9 @@ import sys
 import json
 import uuid
 import urllib
+import urllib2
+import time
+import httplib
 
 
 def usage():
@@ -17,6 +20,39 @@ def usage():
 
 
 NOTELY_FILE = os.environ["HOME"] + "/.notely"
+NOTELY_ACTIONS_FILE = os.environ["HOME"] + "/.notely_actions"
+
+
+def create_actions_file():
+    if not os.path.exists(NOTELY_ACTIONS_FILE):
+        obj = safe_load_notely_file()
+        actions = []
+        for note in obj["notes"]:
+            actions.append({"add":note["message"], "time":time.time()})
+
+        f = open(NOTELY_ACTIONS_FILE, "w")
+        f.write(json.dumps({"actions":actions}))
+        f.flush()
+        f.close()
+
+def save_actions_file(obj):
+    f = open(NOTELY_ACTIONS_FILE, "w")
+    f.write(json.dumps(obj))
+    f.flush()
+    f.close()
+
+def load_notely_actions_file():
+    return json.loads(open(NOTELY_ACTIONS_FILE).read())
+
+def add_action(message):
+    obj = load_notely_actions_file()
+    obj["actions"].append({"add":message, "time":time.time()})
+    save_actions_file(obj)
+
+def delete_action(message):
+    obj = load_notely_actions_file()
+    obj["actions"].append({"del":message, "time":time.time()})
+    save_actions_file(obj)
 
 def safe_load_notely_file():
     try:
@@ -26,11 +62,11 @@ def safe_load_notely_file():
     except:
         f = open(NOTELY_FILE, "w")
         f.write(json.dumps({"notes":[]}))
-        add_userid()
         f.flush()
         f.close()
         f = open(NOTELY_FILE).read()
         obj = json.loads(f)
+        add_userid()
         return obj
 
 def write_notely_dict(dictionary):
@@ -73,6 +109,7 @@ def get_highest_id(obj):
 def add_note(message):
     obj = safe_load_notely_file()
     obj["notes"].append({"message": message, "id":get_highest_id(obj)+1})
+    add_action(message)
     write_notely_dict(obj)
 
 def list_notes():
@@ -89,9 +126,15 @@ def list_notes():
 def delete_note(id):
     obj = safe_load_notely_file()
     new_notes = []
+    message = None
     for note in obj["notes"]:
         if int(note["id"]) != id:
             new_notes.append(note)
+        else:
+            message = note["message"]
+
+    if message != None:
+        delete_action(message)
     obj["notes"] = new_notes
     write_notely_dict(obj)
 
@@ -114,7 +157,26 @@ def end_pair(code):
         write_notely_dict(notely_obj)
         print "successfully paired!"
             
+
+def sync():
+    url = HOST_NAME + "/sync"
+    values = {
+              "actions":json.dumps(load_notely_actions_file()), 
+              "uuid":safe_load_notely_file()["user-id"]
+             } 
+    data = urllib.urlencode(values)          
+    req = urllib2.Request(url, data)
+    response = urllib2.urlopen(req)
+    data = response.read() 
+    json_data = json.loads(data)
+    dict = {"user-id":json_data["user-id"],"notes":json_data["messages"]}
+    write_notely_dict(dict)
+    save_actions_file(json_data["actions"])
+
+
+
 def main():
+    create_actions_file()
     patch_notely_file()
     if len(sys.argv) < 2:
         usage()
@@ -138,6 +200,8 @@ def main():
             list_notes()
         if sys.argv[1] == "clear":
             clear_notes()
+        if sys.argv[1] == "sync":
+            sync()
         if sys.argv[1] == "pair":
             if len(sys.argv) == 2:
                 start_pair()
