@@ -11,6 +11,8 @@ def usage():
     print "notely del id - deletes message with id matching the provided id"
     print "notely list - shows all notes"
     print "notely clear - deletes all notes"
+    print "notely pair - starts notely pairing, will show you a pair code"
+    print "notely pair [code] - ends notely pairing, syncs with the notely instance for a given share code"
 
 
 NOTELY_FILE = os.environ["HOME"] + "/.notely"
