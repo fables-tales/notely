@@ -2,6 +2,7 @@
 import os
 import sys
 import json
+import uuid
 
 
 def usage():
@@ -28,11 +29,21 @@ def safe_load_notely_file():
         obj = json.loads(f)
         return obj
 
-
 def write_notely_dict(dictionary):
     f = open(NOTELY_FILE, "w")
     f.write(json.dumps(dictionary))
     f.close()
+
+
+def add_userid():
+    obj = safe_load_notely_file()
+    if not obj.has_key("user-id"):
+        obj["user-id"] = str(uuid.uuid4()) 
+        write_notely_dict(obj)
+
+def patch_notely_file():
+    add_userid()
+
 
 def clear_notes():
     write_notely_dict({"notes":[]})
@@ -76,6 +87,7 @@ def delete_note(id):
     write_notely_dict(obj)
 
 def main():
+    patch_notely_file()
     if len(sys.argv) < 2:
         usage()
     else:
