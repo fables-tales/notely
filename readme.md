@@ -14,3 +14,8 @@ notely list - shows all notes
 
 notely clear - deletes all notes
 
+notely pair - starts pairing, shows you a code to type
+
+notely pair [code] - finishes pairing, requires the code from the pair start
+
+notely sync - syncs with the remote server

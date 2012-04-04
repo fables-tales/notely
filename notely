@@ -17,6 +17,7 @@ def usage():
     print "notely clear - deletes all notes"
     print "notely pair - starts notely pairing, will show you a pair code"
     print "notely pair [code] - ends notely pairing, syncs with the notely instance for a given share code"
+    print "notely sync - syncs notely with the remote server"
 
 
 NOTELY_FILE = os.environ["HOME"] + "/.notely"
