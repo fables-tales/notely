@@ -3,6 +3,7 @@ import os
 import sys
 import json
 import uuid
+import urllib
 
 
 def usage():
@@ -25,6 +26,7 @@ def safe_load_notely_file():
     except:
         f = open(NOTELY_FILE, "w")
         f.write(json.dumps({"notes":[]}))
+        add_userid()
         f.flush()
         f.close()
         f = open(NOTELY_FILE).read()
@@ -36,16 +38,21 @@ def write_notely_dict(dictionary):
     f.write(json.dumps(dictionary))
     f.close()
 
+def set_userid(obj, user_id):
+    obj["user-id"] = user_id 
 
 def add_userid():
     obj = safe_load_notely_file()
     if not obj.has_key("user-id"):
-        obj["user-id"] = str(uuid.uuid4()) 
+        set_userid(obj, str(uuid.uuid4())) 
         write_notely_dict(obj)
+
+def get_userid():
+    obj = safe_load_notely_file()
+    return obj["user-id"]
 
 def patch_notely_file():
     add_userid()
-
 
 def clear_notes():
     write_notely_dict({"notes":[]})
@@ -88,6 +95,25 @@ def delete_note(id):
     obj["notes"] = new_notes
     write_notely_dict(obj)
 
+HOST_NAME = "http://furious-cloud-9898.herokuapp.com" 
+
+def start_pair():
+    resp = urllib.urlopen(HOST_NAME + "/startpair/" + get_userid())
+    obj = json.load(resp)
+    print "type the following code into your other notely instance:",obj["code"]
+
+def end_pair(code):
+    resp = urllib.urlopen(HOST_NAME + "/endpair/" + code)
+    net_obj = json.load(resp)
+    notely_obj = safe_load_notely_file() 
+    if (net_obj.has_key("err")):
+        print net_obj["err"]
+        exit(1)
+    else:
+        set_userid(notely_obj, net_obj["uuid"])
+        write_notely_dict(notely_obj)
+        print "successfully paired!"
+            
 def main():
     patch_notely_file()
     if len(sys.argv) < 2:
@@ -112,11 +138,17 @@ def main():
             list_notes()
         if sys.argv[1] == "clear":
             clear_notes()
+        if sys.argv[1] == "pair":
+            if len(sys.argv) == 2:
+                start_pair()
+            else:
+                end_pair(sys.argv[2])
         if sys.argv[1] == "del":
             if len(sys.argv) == 2:
                 usage()
             else:
                 delete_note(int(sys.argv[2]))
-            
+
+
 if __name__ == "__main__":
     main()
